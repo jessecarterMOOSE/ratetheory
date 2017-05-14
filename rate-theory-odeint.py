@@ -65,7 +65,7 @@ print 'final Cv: {0:.2e}'.format(Cv[-1])
 # plot!
 plt.loglog(t, Ci, label='Ci')
 plt.loglog(t, Cv, label='Cv')
-plt.legend()
+plt.legend(loc='best')
 plt.grid()
 plt.xlabel('time (sec)')
 plt.ylabel('defect concentration (defects/$\mathdefault{cm^3}$)')
