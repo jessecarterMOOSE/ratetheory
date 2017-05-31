@@ -39,15 +39,16 @@ class Material:
         Ci = solution[:,0]
         Cv = solution[:,1]
 
-        # TODO: make sure we made it to steady state in the first place
-
         # trim off extra solution times past steady state
         max_i = t.size
         for i in reversed(range(0, t.size)):
             Ci_slope, Cv_slope = self.ode_system([Ci[i], Cv[i]], t[i])
             if np.abs(Ci_slope/Ci[-1]) > ss_tol or np.abs(Cv_slope/Cv[-1]) > ss_tol:
-                max_i = i + 1
-                print 'steady state detected at:', t[i], 'seconds'
+                if i == t.size - 1:
+                    print '*** Warning: simulation was possibly not run to steady state! ***'
+                else:
+                    max_i = i + 1
+                    print 'steady state detected at:', t[i], 'seconds'
                 break
 
         return [Ci[0:max_i], Cv[0:max_i]], t[0:max_i]
