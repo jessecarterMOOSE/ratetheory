@@ -8,12 +8,20 @@ class Material:
         print 'initializing Material class using', element
         self.set_properties(element)
         self.sink_strength = 0.0
+        self.sink_values = dict()  # holds individual contributions from different sink types
 
-    def add_dislocation_line_sink(self, density):
-        self.sink_strength += 2.0*constants.pi*density/np.log(1.0/self.Rd/np.sqrt(constants.pi*density))  # sink strength for dislocation line in cm^-2
+    def add_dislocation_line_sink(self, density, name='line'):
+        line_sink_strength = 2.0*constants.pi*density/np.log(1.0/self.Rd/np.sqrt(constants.pi*density))  # sink strength for dislocation line in cm^-2
+        self.sink_strength += line_sink_strength  # add to total sink strength
+        self.sink_values[name] = line_sink_strength  # save contribution from this sink type
+        self.sink_values['all'] = line_sink_strength + self.sink_values.get('all', 0.0)  # add to total
 
-    def add_dislocation_loop_sink(self, density, radius):
-        self.sink_strength += 2.0*constants.pi*density*radius  # sink strength for dislocation loops in cm^-2
+    def add_dislocation_loop_sink(self, density, radius, name='loop'):
+        loop_sink_strength = 2.0*constants.pi*density*radius  # sink strength for dislocation loops in cm^-2
+        self.sink_strength += loop_sink_strength  # add to total sink strength
+        self.sink_values[name] = loop_sink_strength  # save contribution from this sink type
+        self.sink_values['all_loops'] = loop_sink_strength + self.sink_values.get('all_loops', 0.0)  # track contribution from all loops
+        self.sink_values['all'] = loop_sink_strength + self.sink_values.get('all', 0.0)  # add to total
 
     def set_temperature(self, T):
         k_boltz = constants.value('Boltzmann constant in eV/K')
@@ -60,6 +68,9 @@ class Material:
         sol = root(self.ode_system, initial_guess, args=0)  # self.ode_system expects more arguments than passed
         return sol.x
 
+    def get_sink_strength(self, name='all'):
+        return self.sink_values[name]
+
     def set_properties(self, element):
         if element == 'Zr':
             self.Di0 = 3.5e-4        # interstitial diffusion pre-exponential factor in cm^2/s
@@ -92,8 +103,9 @@ if __name__ == '__main__':
     print 'Di: {:.2e} (should be about 1.29E-04)'.format(m.Di)
     print 'Dv: {:.2e} (should be about 4.43E-09)'.format(m.Dv)
     print 'P: {:.2e} (should be about 2.29E+15)'.format(m.P)
-    print 'Q: {:.2e} (should be about 9.39E+07)'.format(m.sink_strength)
     print 'K: {:.2e} (should be about 6.47E-10)'.format(m.K_recom)
+    print 'Q: {:.2e} (should be about 9.39E+07)'.format(m.get_sink_strength())
+    print 'Q from lines: {:.2e} (should also be about 9.39E+07)'.format(m.get_sink_strength('line'))
 
     Ci_steady, Cv_steady = m.steady_state()
     print 'steady state values:'
