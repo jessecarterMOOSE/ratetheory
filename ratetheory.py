@@ -4,8 +4,10 @@ from scipy.integrate import odeint
 from scipy.optimize import root
 
 class Material:
-    def __init__(self, element):
-        print 'initializing Material class using', element
+    def __init__(self, element, verbose=True):
+        self.verbose = verbose
+        if self.verbose:
+            print 'initializing Material class using', element
         self.set_properties(element)
         self.sink_strength = 0.0
         self.sink_values = dict()  # holds individual contributions from different sink types
@@ -56,7 +58,8 @@ class Material:
                     print '*** Warning: simulation was possibly not run to steady state! ***'
                 else:
                     max_i = i + 1
-                    print 'steady state detected at:', t[i], 'seconds'
+                    if self.verbose:
+                        print 'steady state detected at:', t[i], 'seconds'
                 break
 
         return [Ci[0:max_i], Cv[0:max_i]], t[0:max_i]
