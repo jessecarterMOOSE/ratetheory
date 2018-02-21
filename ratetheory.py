@@ -41,7 +41,7 @@ class Material:
         return np.array([self.P - self.K_recom*Ci*Cv - self.sink_strength*self.Di*Ci,
                          self.P - self.K_recom*Ci*Cv - self.sink_strength*self.Dv*Cv])
 
-    def transient(self, initial_conditions, ss_tol=1e-3):
+    def transient(self, initial_conditions=np.zeros(2), ss_tol=1e-3):
         # set up times to solve
         t = np.logspace(-8, 6, num=100)
         t = np.insert(t, 0, np.zeros(1))
@@ -113,8 +113,7 @@ if __name__ == '__main__':
     print 'Cv: {:.2e}'.format(Cv_steady)
 
     print 'now compare those with the plot:'
-    initial_conditions = np.zeros(2)
-    sol, t = m.transient(initial_conditions)
+    sol, t = m.transient()
     Ci, Cv = sol
     plt.loglog(t, Ci, label='Ci')
     plt.loglog(t, Cv, label='Cv')
