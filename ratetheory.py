@@ -3,6 +3,7 @@ import scipy.constants as constants
 from scipy.integrate import odeint
 from scipy.optimize import root
 
+
 class Material:
     def __init__(self, element):
         print 'initializing Material class using', element
@@ -41,25 +42,24 @@ class Material:
                          self.P - self.K_recom*Ci*Cv - self.sink_strength*self.Dv*Cv])
 
     def transient(self, initial_conditions, ss_tol=1e-9):
+        # set up times to solve
         t = np.logspace(-8, 6, num=100)
         t = np.insert(t, 0, np.zeros(1))
+        # get steady-state values to check against
+        Ci_ss, Cv_ss = self.steady_state()
+        # now solve transient
         solution = odeint(self.ode_system, initial_conditions, t)
         Ci = solution[:,0]
         Cv = solution[:,1]
+        # trim off extra solution times past steady state, defined as when solution is within ss_tol of steady state values
+        # this finds the minimum number of values that are before steady state in both solution arrays
+        slices = max(np.size(Ci[Ci<Ci_ss*(1.0-ss_tol)]), np.size(Cv[Cv<Cv_ss*(1.0-ss_tol)]))
+        # check and make sure we actually trimmed something
+        if slices == np.size(Ci):
+            print '*** Warning: simulation was possibly not run to steady state! ***'
 
-        # trim off extra solution times past steady state
-        max_i = t.size
-        for i in reversed(range(0, t.size)):
-            Ci_slope, Cv_slope = self.ode_system([Ci[i], Cv[i]], t[i])
-            if np.abs(Ci_slope/Ci[-1]) > ss_tol or np.abs(Cv_slope/Cv[-1]) > ss_tol:
-                if i == t.size - 1:
-                    print '*** Warning: simulation was possibly not run to steady state! ***'
-                else:
-                    max_i = i + 1
-                    print 'steady state detected at:', t[i], 'seconds'
-                break
-
-        return [Ci[0:max_i], Cv[0:max_i]], t[0:max_i]
+        # return one more array member to make sure we go past steady state
+        return [Ci[0:slices+1], Cv[0:slices+1]], t[0:slices+1]
 
     def steady_state(self):
         # use no recombination case as initial guess
