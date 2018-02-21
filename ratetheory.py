@@ -41,7 +41,7 @@ class Material:
         return np.array([self.P - self.K_recom*Ci*Cv - self.sink_strength*self.Di*Ci,
                          self.P - self.K_recom*Ci*Cv - self.sink_strength*self.Dv*Cv])
 
-    def transient(self, initial_conditions, ss_tol=1e-9):
+    def transient(self, initial_conditions, ss_tol=1e-3):
         # set up times to solve
         t = np.logspace(-8, 6, num=100)
         t = np.insert(t, 0, np.zeros(1))
