@@ -4,8 +4,9 @@ from scipy.integrate import odeint
 from scipy.optimize import root
 
 class Material:
-    def __init__(self, element, verbose=True):
+    def __init__(self, element, verbose=True, decouple=False):
         self.verbose = verbose
+        self.decouple = decouple
         if self.verbose:
             print 'initializing Material class using', element
         self.set_properties(element)
@@ -31,6 +32,8 @@ class Material:
         self.Dv = self.Dv0*np.exp(-self.Evm/k_boltz/T)          # vacancy diffusion coefficient in cm^2/s
         # self.K_recom = self.Ziv*self.Di/self.a/self.a/self.N  # recombination coefficient in cm^3/s
         self.K_recom = 1.0e-8 * self.Ziv * self.Di              # recombination coefficient in cm^3/s (for backwards compatibility)
+        if self.decouple:
+            self.K_recom = 0.0
 
     def set_flux(self, flux):
         self.flux = flux
@@ -94,33 +97,45 @@ if __name__ == '__main__':
 
     # create an instance
     m = Material('Zr')
+    m_decoupled = Material('Zr', decouple=True)
 
     # add a sink
     m.add_dislocation_line_sink(1.0e8)
+    m_decoupled.add_dislocation_line_sink(1.0e8)
 
     # set test conditions
     m.set_temperature(700)
     m.set_flux(1.0e14)
+    m_decoupled.set_temperature(700)
+    m_decoupled.set_flux(1.0e14)
 
     # check parameters
     print 'Di: {:.2e} (should be about 1.29E-04)'.format(m.Di)
     print 'Dv: {:.2e} (should be about 4.43E-09)'.format(m.Dv)
     print 'P: {:.2e} (should be about 2.29E+15)'.format(m.P)
     print 'K: {:.2e} (should be about 6.47E-10)'.format(m.K_recom)
+    print 'decoupled K: {:.2e} (should be 0.0)'.format(m_decoupled.K_recom)
     print 'Q: {:.2e} (should be about 9.39E+07)'.format(m.get_sink_strength())
     print 'Q from lines: {:.2e} (should also be about 9.39E+07)'.format(m.get_sink_strength('line'))
 
     Ci_steady, Cv_steady = m.steady_state()
+    Ci_steady_decoupled, Cv_steady_decoupled = m_decoupled.steady_state()
     print 'steady state values:'
     print 'Ci: {:.2e}'.format(Ci_steady)
     print 'Cv: {:.2e}'.format(Cv_steady)
+    print 'decoupled Ci: {:.2e}, analytical solution: {:.2e}'.format(Ci_steady_decoupled, m_decoupled.P/m_decoupled.get_sink_strength()/m_decoupled.Di)
+    print 'decoupled Cv: {:.2e}, analytical solution: {:.2e}'.format(Cv_steady_decoupled, m_decoupled.P/m_decoupled.get_sink_strength()/m_decoupled.Dv)
 
     print 'now compare those with the plot:'
     initial_conditions = np.zeros(2)
     sol, t = m.transient(initial_conditions)
     Ci, Cv = sol
+    sol, t_decoupled = m_decoupled.transient(initial_conditions)
+    Ci_decoupled, Cv_decoupled = sol
     plt.loglog(t, Ci, label='Ci')
     plt.loglog(t, Cv, label='Cv')
+    plt.loglog(t_decoupled, Ci_decoupled, label='Ci (decoupled)')
+    plt.loglog(t_decoupled, Cv_decoupled, label='Cv (decoupled)')
     plt.legend(loc='best')
     plt.grid()
     plt.xlabel('time (seconds)')
